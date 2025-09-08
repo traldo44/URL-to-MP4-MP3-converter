@@ -1,18 +1,108 @@
-# URL to MP4/MP3 Converter
+# 🎬 URL to MP4/MP3 Converter
 
-Bu program, verilen URL'leri yüksek kalitede MP4 veya MP3 formatına dönüştüren bir Python uygulamasıdır.
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 
-## Özellikler
+---
 
-- **Çoklu Format Desteği**: MP4 (video + ses) ve MP3 (sadece ses) formatlarını destekler
-- **Yüksek Kalite**: En yüksek çözünürlükte indirme (1080p, 720p, 480p seçenekleri)
-- **Kullanıcı Dostu Arayüz**: Tkinter tabanlı modern GUI
-- **Çoklu Platform**: Windows, macOS ve Linux desteği
-- **Executable**: Tek dosya olarak çalıştırılabilir .exe dosyası
+## 🇺🇸 English
 
-## Kurulum
+This program is a modern Python application that converts given URLs to high-quality MP4 or MP3 format.
 
-### Geliştirme Ortamı için
+### ✨ Features
+
+- **🎥 Multi-Format Support**: Supports MP4 (video + audio) and MP3 (audio only) formats
+- **📺 High Quality**: Download in highest resolution (1080p, 720p, 480p options)
+- **🎨 Modern Interface**: Tkinter-based glassmorphic GUI design
+- **🖥️ Multi-Platform**: Windows, macOS and Linux support
+- **📦 Executable**: Single file runnable .exe file
+- **📊 Progress Tracking**: Download percentage and speed display
+- **💾 Persistent Settings**: Selected download path is automatically saved
+- **🔴 Visual Feedback**: Selected buttons have red borders
+
+### 🚀 Installation
+
+#### For Development Environment
+
+1. Install Python 3.8+
+2. Install required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Run the program:
+   ```bash
+   python converter.py
+   ```
+
+#### Creating Executable
+
+1. Install required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Create executable:
+   ```bash
+   python build_exe.py
+   ```
+
+3. Run the created `dist/URLConverter.exe` file
+
+### 📖 Usage
+
+1. Open the program
+2. Enter the URL you want to convert
+3. Select format (MP4 or MP3)
+4. Select quality (1080p, 720p, 480p options)
+5. Select output folder (displayed in top right)
+6. Click "📥 DOWNLOAD" button
+
+### 🌐 Supported Platforms
+
+- ✅ YouTube
+- ✅ Vimeo
+- ✅ Facebook
+- ✅ Twitter
+- ✅ Instagram
+- ✅ TikTok
+- ✅ And more (all platforms supported by yt-dlp)
+
+### 📋 Requirements
+
+- Python 3.8+
+- yt-dlp
+- tkinter (comes with Python)
+- Pillow
+- PyInstaller (for creating executable)
+
+### 🔧 Troubleshooting
+
+- **FFmpeg error**: Make sure FFmpeg is installed on your system
+- **Download error**: Make sure the URL is valid and your internet connection is working
+- **Quality issue**: If selected quality is not available, the program automatically selects the highest available quality
+
+---
+
+## 🇹🇷 Türkçe
+
+Bu program, verilen URL'leri yüksek kalitede MP4 veya MP3 formatına dönüştüren modern bir Python uygulamasıdır.
+
+### ✨ Özellikler
+
+- **🎥 Çoklu Format Desteği**: MP4 (video + ses) ve MP3 (sadece ses) formatlarını destekler
+- **📺 Yüksek Kalite**: En yüksek çözünürlükte indirme (1080p, 720p, 480p seçenekleri)
+- **🎨 Modern Arayüz**: Tkinter tabanlı glassmorphic GUI tasarımı
+- **🖥️ Çoklu Platform**: Windows, macOS ve Linux desteği
+- **📦 Executable**: Tek dosya olarak çalıştırılabilir .exe dosyası
+- **📊 Progress Tracking**: İndirme yüzdesi ve hız gösterimi
+- **💾 Kalıcı Ayarlar**: Seçilen indirme yolu otomatik kaydedilir
+- **🔴 Görsel Geri Bildirim**: Seçili butonlar kırmızı çerçeveli
+
+### 🚀 Kurulum
+
+#### Geliştirme Ortamı için
 
 1. Python 3.8+ yükleyin
 2. Gerekli paketleri yükleyin:
@@ -25,7 +115,7 @@ Bu program, verilen URL'leri yüksek kalitede MP4 veya MP3 formatına dönüşt�
    python converter.py
    ```
 
-### Executable Oluşturma
+#### Executable Oluşturma
 
 1. Gerekli paketleri yükleyin:
    ```bash
@@ -39,25 +129,26 @@ Bu program, verilen URL'leri yüksek kalitede MP4 veya MP3 formatına dönüşt�
 
 3. Oluşturulan `dist/URLConverter.exe` dosyasını çalıştırın
 
-## Kullanım
+### 📖 Kullanım
 
 1. Programı açın
 2. Dönüştürmek istediğiniz URL'yi girin
 3. Format seçin (MP4 veya MP3)
-4. Kalite seçin (En İyi, 1080p, 720p, 480p)
-5. Çıktı klasörünü seçin
-6. "Download" butonuna tıklayın
+4. Kalite seçin (1080p, 720p, 480p seçenekleri)
+5. Çıktı klasörünü seçin (sağ üstte görünür)
+6. "📥 DOWNLOAD" butonuna tıklayın
 
-## Desteklenen Platformlar
+### 🌐 Desteklenen Platformlar
 
-- YouTube
-- Vimeo
-- Facebook
-- Twitter
-- Instagram
-- Ve daha fazlası (yt-dlp desteklediği tüm platformlar)
+- ✅ YouTube
+- ✅ Vimeo
+- ✅ Facebook
+- ✅ Twitter
+- ✅ Instagram
+- ✅ TikTok
+- ✅ Ve daha fazlası (yt-dlp desteklediği tüm platformlar)
 
-## Gereksinimler
+### 📋 Gereksinimler
 
 - Python 3.8+
 - yt-dlp
@@ -65,13 +156,21 @@ Bu program, verilen URL'leri yüksek kalitede MP4 veya MP3 formatına dönüşt�
 - Pillow
 - PyInstaller (executable oluşturmak için)
 
-## Sorun Giderme
+### 🔧 Sorun Giderme
 
 - **FFmpeg hatası**: FFmpeg'in sisteminizde yüklü olduğundan emin olun
 - **İndirme hatası**: URL'nin geçerli olduğundan ve internet bağlantınızın çalıştığından emin olun
 - **Kalite sorunu**: Seçilen kalite mevcut değilse, program otomatik olarak en yüksek mevcut kaliteyi seçer
 
-## Lisans
+---
 
-Bu proje MIT lisansı altında lisanslanmıştır.
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 👨‍💻 Developer
+
+**Mert Aydıngüneş**  
+**Version:** 1.0.0  
+**Date:** 2024
 
