@@ -1,0 +1,44 @@
+# Build directories
+build/
+dist/
+__pycache__/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# PyInstaller
+*.spec
+*.toc
+*.html
+xref-*.html
+
+# Large files
+*.zip
+*.rar
+*.7z
+
+# FFmpeg
+ffmpeg/
