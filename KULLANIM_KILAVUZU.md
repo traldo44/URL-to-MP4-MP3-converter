@@ -82,3 +82,4 @@ Bu program ücretsizdir ve eğitim amaçlı kullanım için tasarlanmıştır.
 
 ## İletişim
 Herhangi bir sorun yaşarsanız, program loglarını kontrol ederek hata mesajlarını görebilirsiniz.
+
