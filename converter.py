@@ -10,6 +10,7 @@ import zipfile
 import shutil
 from pathlib import Path
 import webbrowser
+import json
 
 class URLConverter:
     def __init__(self, root):
@@ -22,6 +23,9 @@ class URLConverter:
         # FFmpeg path
         self.ffmpeg_path = None
         self.is_downloading = False
+        
+        # Config file path
+        self.config_file = os.path.join(os.path.expanduser("~"), ".urlconverter_config.json")
         
         # Modern Glassmorphic color scheme
         self.colors = {
@@ -55,6 +59,8 @@ class URLConverter:
         self.advanced_mode = tk.BooleanVar(value=False)
         
         self.setup_ui()
+        # Load saved settings
+        self.load_config()
         # FFmpeg kontrolünü arka planda yap
         threading.Thread(target=self.check_ffmpeg_background, daemon=True).start()
         
@@ -88,6 +94,8 @@ class URLConverter:
         
         # Set default output path
         self.output_path.set(os.path.join(os.path.expanduser("~"), "Downloads"))
+        # Update path display
+        self.update_path_display()
     
     def setup_styles(self):
         """Configure modern glassmorphic styles for the application"""
@@ -174,6 +182,13 @@ class URLConverter:
         
         # Add tooltip for folder button
         self.create_tooltip(folder_btn, "Select download folder")
+        
+        # Path display label next to folder button
+        self.path_display = tk.Label(button_frame, text="📂 Downloads", 
+                                   font=('Segoe UI', 10), 
+                                   bg=self.colors['secondary'], fg=self.colors['text2'],
+                                   wraplength=200, justify=tk.LEFT)
+        self.path_display.pack(side=tk.LEFT, padx=(0, 10))
         
         # Download button
         download_btn = tk.Button(button_frame, text="📥 DOWNLOAD", font=('Segoe UI', 12, 'bold'),
@@ -578,10 +593,21 @@ class URLConverter:
             else:
                 button.config(bg=self.colors['accent3'], relief='flat', bd=0, padx=20, pady=15)
         
-        # Highlight selected format button
+        # Highlight selected format button with enhanced red styling
         if format_type in self.format_buttons:
             selected_button = self.format_buttons[format_type]
-            selected_button.config(relief='solid', bd=3, highlightbackground='red', highlightcolor='red')
+            selected_button.config(
+                bg='#FF4444',  # Red background
+                relief='solid', 
+                bd=4,  # Thicker border
+                highlightbackground='#FF4444',  # Bright red
+                highlightcolor='#FF4444',  # Bright red
+                highlightthickness=3,  # Thick highlight
+                font=('Segoe UI', 11, 'bold'),  # Bolder font
+                fg='white',  # White text
+                padx=25,  # More padding
+                pady=18   # More padding
+            )
         
         # Update quality buttons based on format
         self.create_quality_buttons()
@@ -613,10 +639,21 @@ class URLConverter:
             original_color = quality_colors.get(quality_name, self.colors['accent'])
             button.config(bg=original_color, relief='flat', bd=0, padx=10, pady=8)
         
-        # Highlight selected quality button
+        # Highlight selected quality button with enhanced red styling
         if quality in self.quality_buttons:
             selected_button = self.quality_buttons[quality]
-            selected_button.config(relief='solid', bd=3, highlightbackground='red', highlightcolor='red')
+            selected_button.config(
+                bg='#FF4444',  # Red background
+                relief='solid', 
+                bd=4,  # Thicker border
+                highlightbackground='#FF4444',  # Bright red
+                highlightcolor='#FF4444',  # Bright red
+                highlightthickness=3,  # Thick highlight
+                font=('Segoe UI', 9, 'bold'),  # Bolder font
+                fg='white',  # White text
+                padx=12,  # More padding
+                pady=10   # More padding
+            )
     
     def show_help(self):
         """Show help dialog"""
@@ -695,6 +732,44 @@ Created by Mert Aydıngüneş
         folder = filedialog.askdirectory(initialdir=self.output_path.get())
         if folder:
             self.output_path.set(folder)
+            self.update_path_display()
+            self.save_config()  # Save the selected path
+    
+    def update_path_display(self):
+        """Update the path display label with current download path"""
+        current_path = self.output_path.get()
+        if current_path:
+            # Show only the last part of the path for space efficiency
+            if len(current_path) > 30:
+                display_text = f"📂 ...{current_path[-25:]}"
+            else:
+                display_text = f"📂 {current_path}"
+            self.path_display.config(text=display_text)
+        else:
+            self.path_display.config(text="📂 Downloads")
+    
+    def load_config(self):
+        """Load saved configuration from file"""
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                    if 'output_path' in config:
+                        self.output_path.set(config['output_path'])
+                        self.update_path_display()
+        except Exception as e:
+            print(f"Error loading config: {e}")
+    
+    def save_config(self):
+        """Save current configuration to file"""
+        try:
+            config = {
+                'output_path': self.output_path.get()
+            }
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"Error saving config: {e}")
     
     def log_message(self, message):
         self.log_text.insert(tk.END, f"{message}\n")
@@ -724,6 +799,28 @@ Created by Mert Aydıngüneş
         thread.daemon = True
         thread.start()
     
+    def progress_hook(self, d):
+        """Progress callback for yt-dlp downloads"""
+        if d['status'] == 'downloading':
+            if 'total_bytes' in d:
+                percent = (d['downloaded_bytes'] / d['total_bytes']) * 100
+                speed = d.get('speed', 0)
+                if speed:
+                    speed_mb = speed / (1024 * 1024)
+                    self.log_message(f"📥 Downloading: {percent:.1f}% - {speed_mb:.2f} MB/s")
+                else:
+                    self.log_message(f"📥 Downloading: {percent:.1f}%")
+            elif 'total_bytes_estimate' in d:
+                percent = (d['downloaded_bytes'] / d['total_bytes_estimate']) * 100
+                speed = d.get('speed', 0)
+                if speed:
+                    speed_mb = speed / (1024 * 1024)
+                    self.log_message(f"📥 Downloading: ~{percent:.1f}% - {speed_mb:.2f} MB/s")
+                else:
+                    self.log_message(f"📥 Downloading: ~{percent:.1f}%")
+        elif d['status'] == 'finished':
+            self.log_message("✅ Download finished, processing...")
+
     def download_video(self):
         try:
             url = self.url_var.get().strip()
@@ -744,6 +841,7 @@ Created by Mert Aydıngüneş
                 'geo_bypass': True,
                 'geo_bypass_country': None,
                 'geo_bypass_ip_block': None,
+                'progress_hooks': [self.progress_hook],
             }
             
             if output_format == "mp3":
