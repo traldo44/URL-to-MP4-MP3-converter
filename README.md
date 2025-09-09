@@ -79,9 +79,28 @@ This program is a modern Python application that converts given URLs to high-qua
 
 ### 🔧 Troubleshooting
 
-- **FFmpeg error**: Make sure FFmpeg is installed on your system
-- **Download error**: Make sure the URL is valid and your internet connection is working
-- **Quality issue**: If selected quality is not available, the program automatically selects the highest available quality
+#### Common Issues and Solutions
+
+**SSL Connection Errors:**
+- The program now includes automatic SSL retry mechanism
+- If you still get SSL errors, try running as administrator
+- Check your antivirus/firewall settings
+- Disable VPN temporarily if you're using one
+
+**Download Errors:**
+- Make sure the URL is valid and your internet connection is working
+- The program will automatically retry failed downloads up to 3 times
+- Check if the video is available in your region
+
+**FFmpeg Issues:**
+- FFmpeg will be downloaded automatically if not found
+- If download fails, check your internet connection
+- Temporarily disable antivirus during FFmpeg download
+
+**Quality Issues:**
+- If selected quality is not available, the program automatically selects the highest available quality
+- Try different quality options if download fails
+
 
 ---
 
@@ -158,9 +177,28 @@ Bu program, verilen URL'leri yüksek kalitede MP4 veya MP3 formatına dönüşt�
 
 ### 🔧 Sorun Giderme
 
-- **FFmpeg hatası**: FFmpeg'in sisteminizde yüklü olduğundan emin olun
-- **İndirme hatası**: URL'nin geçerli olduğundan ve internet bağlantınızın çalıştığından emin olun
-- **Kalite sorunu**: Seçilen kalite mevcut değilse, program otomatik olarak en yüksek mevcut kaliteyi seçer
+#### Yaygın Sorunlar ve Çözümleri
+
+**SSL Bağlantı Hataları:**
+- Program artık otomatik SSL yeniden deneme mekanizması içeriyor
+- Hala SSL hatası alıyorsanız, programı yönetici olarak çalıştırmayı deneyin
+- Antivirus/firewall ayarlarınızı kontrol edin
+- VPN kullanıyorsanız geçici olarak kapatmayı deneyin
+
+**İndirme Hataları:**
+- URL'nin geçerli olduğundan ve internet bağlantınızın çalıştığından emin olun
+- Program başarısız indirmeleri otomatik olarak 3 kez yeniden deneyecek
+- Videoyu bölgenizde mevcut olup olmadığını kontrol edin
+
+**FFmpeg Sorunları:**
+- FFmpeg bulunamazsa otomatik olarak indirilecek
+- İndirme başarısız olursa internet bağlantınızı kontrol edin
+- FFmpeg indirme sırasında antivirus programınızı geçici olarak kapatın
+
+**Kalite Sorunları:**
+- Seçilen kalite mevcut değilse, program otomatik olarak en yüksek mevcut kaliteyi seçer
+- İndirme başarısız olursa farklı kalite seçeneklerini deneyin
+
 
 ---
 

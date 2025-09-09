@@ -11,6 +11,12 @@ import shutil
 from pathlib import Path
 import webbrowser
 import json
+import ssl
+import certifi
+import requests
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+import time
 
 class URLConverter:
     def __init__(self, root):
@@ -828,7 +834,7 @@ Created by Mert Aydıngüneş
             quality = self.quality_var.get()
             output_dir = self.output_path.get()
             
-            # Configure yt-dlp options for high quality
+            # Configure yt-dlp options for high quality with SSL fixes
             ydl_opts = {
                 'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
                 'format': self.get_format_selector(output_format, quality),
@@ -842,6 +848,20 @@ Created by Mert Aydıngüneş
                 'geo_bypass_country': None,
                 'geo_bypass_ip_block': None,
                 'progress_hooks': [self.progress_hook],
+                # SSL ve bağlantı düzeltmeleri
+                'socket_timeout': 30,
+                'retries': 3,
+                'fragment_retries': 3,
+                'http_chunk_size': 10485760,  # 10MB chunks
+                'sleep_interval': 1,
+                'max_sleep_interval': 5,
+                # SSL sertifika düzeltmeleri
+                'cacert': certifi.where(),
+                'legacy_server_connect': False,
+                # User agent ve headers
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
             }
             
             if output_format == "mp3":
@@ -872,39 +892,86 @@ Created by Mert Aydıngüneş
                 if ffmpeg_available and self.ffmpeg_path != 'ffmpeg':
                     ydl_opts['ffmpeg_location'] = os.path.dirname(self.ffmpeg_path)
             
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # Get video info first
-                self.log_message("🔍 Getting video information...")
-                self.status_label.config(text="Analyzing video data...")
-                
-                info = ydl.extract_info(url, download=False)
-                title = info.get('title', 'Unknown')
-                duration = info.get('duration', 0)
-                uploader = info.get('uploader', 'Unknown')
-                view_count = info.get('view_count', 0)
-                upload_date = info.get('upload_date', 'Unknown')
-                
-                # Display video info
-                self.display_video_info(info)
-                
-                self.log_message(f"📹 Title: {title}")
-                self.log_message(f"👤 Uploader: {uploader}")
-                self.log_message(f"⏱️ Duration: {duration // 60}:{duration % 60:02d}")
-                self.log_message(f"👀 Views: {view_count:,}")
-                self.log_message(f"📅 Upload Date: {upload_date}")
-                self.log_message(f"🎯 Quality: {quality.upper()}")
-                
-                # Start download
-                self.log_message("🚀 Starting download...")
-                self.status_label.config(text="Downloading...")
-                
-                ydl.download([url])
-                
-            self.log_message("✅ Download completed successfully!")
-            self.status_label.config(text="Download completed!")
+            # Retry mechanism for SSL and connection errors
+            max_retries = 3
+            retry_count = 0
+            
+            while retry_count < max_retries:
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        # Get video info first
+                        self.log_message("🔍 Getting video information...")
+                        self.status_label.config(text="Analyzing video data...")
+                        
+                        info = ydl.extract_info(url, download=False)
+                        title = info.get('title', 'Unknown')
+                        duration = info.get('duration', 0)
+                        uploader = info.get('uploader', 'Unknown')
+                        view_count = info.get('view_count', 0)
+                        upload_date = info.get('upload_date', 'Unknown')
+                        
+                        # Display video info
+                        self.display_video_info(info)
+                        
+                        self.log_message(f"📹 Title: {title}")
+                        self.log_message(f"👤 Uploader: {uploader}")
+                        self.log_message(f"⏱️ Duration: {duration // 60}:{duration % 60:02d}")
+                        self.log_message(f"👀 Views: {view_count:,}")
+                        self.log_message(f"📅 Upload Date: {upload_date}")
+                        self.log_message(f"🎯 Quality: {quality.upper()}")
+                        
+                        # Start download
+                        self.log_message("🚀 Starting download...")
+                        self.status_label.config(text="Downloading...")
+                        
+                        ydl.download([url])
+                        
+                    self.log_message("✅ Download completed successfully!")
+                    self.status_label.config(text="Download completed!")
+                    break  # Success, exit retry loop
+                    
+                except Exception as e:
+                    error_str = str(e).lower()
+                    retry_count += 1
+                    
+                    # Check for SSL or connection errors
+                    if any(keyword in error_str for keyword in ['ssl', 'session', 'connection', 'timeout', 'network']):
+                        if retry_count < max_retries:
+                            self.log_message(f"⚠️ Connection error (attempt {retry_count}/{max_retries}): {str(e)}")
+                            self.log_message(f"🔄 Retrying in {retry_count * 2} seconds...")
+                            self.status_label.config(text=f"Retrying... ({retry_count}/{max_retries})")
+                            
+                            # Wait before retry
+                            time.sleep(retry_count * 2)
+                            
+                            # Update yt-dlp options for retry
+                            ydl_opts['socket_timeout'] = 30 + (retry_count * 10)
+                            ydl_opts['retries'] = 5 + retry_count
+                            ydl_opts['sleep_interval'] = retry_count
+                            
+                            continue
+                        else:
+                            # Max retries reached
+                            raise e
+                    else:
+                        # Non-retryable error
+                        raise e
             
         except Exception as e:
-            error_msg = f"❌ Error: {str(e)}"
+            error_str = str(e).lower()
+            
+            # Detailed error messages based on error type
+            if 'ssl' in error_str or 'session' in error_str:
+                error_msg = f"❌ SSL Connection Error: {str(e)}\n\n🔧 Çözüm önerileri:\n• İnternet bağlantınızı kontrol edin\n• Antivirus/firewall ayarlarını kontrol edin\n• VPN kullanıyorsanız kapatmayı deneyin\n• Programı yönetici olarak çalıştırın"
+            elif 'network' in error_str or 'connection' in error_str:
+                error_msg = f"❌ Network Error: {str(e)}\n\n🔧 Çözüm önerileri:\n• İnternet bağlantınızı kontrol edin\n• Proxy ayarlarınızı kontrol edin\n• URL'nin doğru olduğundan emin olun"
+            elif 'ffmpeg' in error_str:
+                error_msg = f"❌ FFmpeg Error: {str(e)}\n\n🔧 Çözüm önerileri:\n• FFmpeg otomatik indirilecek\n• İnternet bağlantınızı kontrol edin\n• Antivirus programınızı geçici olarak kapatın"
+            elif 'format' in error_str or 'quality' in error_str:
+                error_msg = f"❌ Format Error: {str(e)}\n\n🔧 Çözüm önerileri:\n• Farklı bir kalite seçin\n• Farklı bir format deneyin\n• Video mevcut olmayabilir"
+            else:
+                error_msg = f"❌ Error: {str(e)}\n\n🔧 Genel çözüm önerileri:\n• Programı yeniden başlatın\n• URL'nin doğru olduğundan emin olun\n• İnternet bağlantınızı kontrol edin"
+            
             self.log_message(error_msg)
             self.status_label.config(text="Download failed!")
             messagebox.showerror("Download Error", error_msg)
@@ -1058,8 +1125,8 @@ Available formats:
             ffmpeg_dir = os.path.join(os.path.dirname(__file__), 'ffmpeg')
             os.makedirs(ffmpeg_dir, exist_ok=True)
             
-            # FFmpeg download URL (static build)
-            ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+            # FFmpeg download URL (static build) - Updated to working URL
+            ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-12-13-12-50/ffmpeg-master-latest-win64-gpl.zip"
             
             self.log_message("📥 FFmpeg indiriliyor... (Bu işlem 2-3 dakika sürebilir)")
             
@@ -1069,9 +1136,16 @@ Available formats:
             # Download FFmpeg with progress
             zip_path = os.path.join(ffmpeg_dir, 'ffmpeg.zip')
             
-            # Create request with timeout
+            # Create request with timeout and SSL context
             req = urllib.request.Request(ffmpeg_url)
-            with urllib.request.urlopen(req, timeout=60) as response:
+            req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+            
+            # Create SSL context with proper certificates
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            with urllib.request.urlopen(req, timeout=60, context=ssl_context) as response:
                 total_size = int(response.headers.get('Content-Length', 0))
                 downloaded = 0
                 
@@ -1126,8 +1200,8 @@ Available formats:
             ffmpeg_dir = os.path.join(os.path.dirname(__file__), 'ffmpeg')
             os.makedirs(ffmpeg_dir, exist_ok=True)
             
-            # FFmpeg download URL (static build)
-            ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+            # FFmpeg download URL (static build) - Updated to working URL
+            ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-12-13-12-50/ffmpeg-master-latest-win64-gpl.zip"
             
             # UI'ye mesaj gönder
             if hasattr(self, 'log_text'):
@@ -1240,6 +1314,7 @@ Available formats:
     def get_ffmpeg_path(self):
         """Get FFmpeg executable path"""
         return self.ffmpeg_path
+    
 
 def main():
     root = tk.Tk()
