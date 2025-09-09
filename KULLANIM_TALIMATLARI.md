@@ -87,3 +87,4 @@ Unblock-File -Path "URLConverter.exe"
 **Not:** Bu program tamamen güvenlidir ve sadece video indirme işlemi yapar. Hiçbir kişisel veri toplamaz veya göndermez.
 
 
+

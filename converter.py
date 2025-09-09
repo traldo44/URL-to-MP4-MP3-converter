@@ -1125,66 +1125,47 @@ Available formats:
             ffmpeg_dir = os.path.join(os.path.dirname(__file__), 'ffmpeg')
             os.makedirs(ffmpeg_dir, exist_ok=True)
             
-            # FFmpeg download URL (static build) - Updated to working URL
-            ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-12-13-12-50/ffmpeg-master-latest-win64-gpl.zip"
+            # Try to download FFmpeg from multiple sources
+            ffmpeg_downloaded = False
             
-            self.log_message("📥 FFmpeg indiriliyor... (Bu işlem 2-3 dakika sürebilir)")
+            # Method 1: Try direct download from gyan.dev (most reliable)
+            try:
+                self.log_message("🔍 FFmpeg indiriliyor (Kaynak 1)...")
+                ffmpeg_url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+                self.download_ffmpeg_from_url(ffmpeg_url, ffmpeg_dir)
+                ffmpeg_downloaded = True
+                self.log_message("✅ FFmpeg başarıyla indirildi!")
+            except Exception as e:
+                self.log_message(f"⚠️ Kaynak 1 başarısız: {str(e)}")
             
-            # Show progress bar
-            self.show_ffmpeg_progress()
-            
-            # Download FFmpeg with progress
-            zip_path = os.path.join(ffmpeg_dir, 'ffmpeg.zip')
-            
-            # Create request with timeout and SSL context
-            req = urllib.request.Request(ffmpeg_url)
-            req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-            
-            # Create SSL context with proper certificates
-            ssl_context = ssl.create_default_context(cafile=certifi.where())
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            
-            with urllib.request.urlopen(req, timeout=60, context=ssl_context) as response:
-                total_size = int(response.headers.get('Content-Length', 0))
-                downloaded = 0
-                
-                with open(zip_path, 'wb') as f:
-                    while True:
-                        chunk = response.read(8192)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        downloaded += len(chunk)
+            # Method 2: Try GitHub releases if first method failed
+            if not ffmpeg_downloaded:
+                try:
+                    self.log_message("🔍 FFmpeg indiriliyor (Kaynak 2)...")
+                    # Try to find latest release
+                    import json
+                    github_api_url = "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest"
+                    api_req = urllib.request.Request(github_api_url)
+                    api_req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+                    
+                    with urllib.request.urlopen(api_req, timeout=10) as api_response:
+                        release_data = json.loads(api_response.read().decode())
                         
-                        if total_size > 0:
-                            percent = (downloaded / total_size) * 100
-                            self.update_ffmpeg_progress(percent, downloaded, total_size)
+                        # Find win64-gpl.zip asset
+                        for asset in release_data.get('assets', []):
+                            if 'win64-gpl.zip' in asset['name']:
+                                ffmpeg_url = asset['browser_download_url']
+                                self.download_ffmpeg_from_url(ffmpeg_url, ffmpeg_dir)
+                                ffmpeg_downloaded = True
+                                self.log_message("✅ FFmpeg başarıyla indirildi!")
+                                break
+                except Exception as e:
+                    self.log_message(f"⚠️ Kaynak 2 başarısız: {str(e)}")
             
-            self.hide_ffmpeg_progress()
-            self.log_message("📦 FFmpeg çıkarılıyor...")
-            
-            # Extract FFmpeg
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(ffmpeg_dir)
-            
-            # Find ffmpeg.exe in extracted files
-            for root, dirs, files in os.walk(ffmpeg_dir):
-                if 'ffmpeg.exe' in files:
-                    ffmpeg_exe = os.path.join(root, 'ffmpeg.exe')
-                    # Move to ffmpeg directory
-                    shutil.move(ffmpeg_exe, os.path.join(ffmpeg_dir, 'ffmpeg.exe'))
-                    break
-            
-            # Clean up
-            os.remove(zip_path)
-            for root, dirs, files in os.walk(ffmpeg_dir):
-                for dir_name in dirs:
-                    if dir_name != 'ffmpeg':
-                        shutil.rmtree(os.path.join(root, dir_name), ignore_errors=True)
+            if not ffmpeg_downloaded:
+                raise Exception("Tüm FFmpeg indirme kaynakları başarısız oldu. Lütfen internet bağlantınızı kontrol edin.")
             
             self.ffmpeg_path = os.path.join(ffmpeg_dir, 'ffmpeg.exe')
-            self.log_message("✅ FFmpeg başarıyla indirildi ve kuruldu!")
             self.log_message("🎯 Artık maksimum kalitede video indirebilirsiniz!")
             
         except Exception as e:
@@ -1193,6 +1174,63 @@ Available formats:
             self.log_message("⚠️ FFmpeg olmadan da çalışır, ancak kalite düşük olabilir.")
             self.ffmpeg_path = None
     
+    def download_ffmpeg_from_url(self, ffmpeg_url, ffmpeg_dir):
+        """Download FFmpeg from specific URL"""
+        self.log_message(f"📥 FFmpeg indiriliyor: {ffmpeg_url}")
+        
+        # Show progress bar
+        self.show_ffmpeg_progress()
+        
+        # Download FFmpeg with progress
+        zip_path = os.path.join(ffmpeg_dir, 'ffmpeg.zip')
+        
+        # Create request with timeout and SSL context
+        req = urllib.request.Request(ffmpeg_url)
+        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+        
+        # Create SSL context with proper certificates
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        
+        with urllib.request.urlopen(req, timeout=60, context=ssl_context) as response:
+            total_size = int(response.headers.get('Content-Length', 0))
+            downloaded = 0
+            
+            with open(zip_path, 'wb') as f:
+                while True:
+                    chunk = response.read(8192)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    
+                    if total_size > 0:
+                        percent = (downloaded / total_size) * 100
+                        self.update_ffmpeg_progress(percent, downloaded, total_size)
+        
+        self.hide_ffmpeg_progress()
+        self.log_message("📦 FFmpeg çıkarılıyor...")
+        
+        # Extract FFmpeg
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(ffmpeg_dir)
+        
+        # Find ffmpeg.exe in extracted files
+        for root, dirs, files in os.walk(ffmpeg_dir):
+            if 'ffmpeg.exe' in files:
+                ffmpeg_exe = os.path.join(root, 'ffmpeg.exe')
+                # Move to ffmpeg directory
+                shutil.move(ffmpeg_exe, os.path.join(ffmpeg_dir, 'ffmpeg.exe'))
+                break
+        
+        # Clean up
+        os.remove(zip_path)
+        for root, dirs, files in os.walk(ffmpeg_dir):
+            for dir_name in dirs:
+                if dir_name != 'ffmpeg':
+                    shutil.rmtree(os.path.join(root, dir_name), ignore_errors=True)
+    
     def download_ffmpeg(self):
         """Download and extract FFmpeg automatically"""
         try:
@@ -1200,47 +1238,91 @@ Available formats:
             ffmpeg_dir = os.path.join(os.path.dirname(__file__), 'ffmpeg')
             os.makedirs(ffmpeg_dir, exist_ok=True)
             
-            # FFmpeg download URL (static build) - Updated to working URL
-            ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-12-13-12-50/ffmpeg-master-latest-win64-gpl.zip"
+            # Try to download FFmpeg from multiple sources
+            ffmpeg_downloaded = False
             
-            # UI'ye mesaj gönder
-            if hasattr(self, 'log_text'):
-                self.log_message("📥 FFmpeg indiriliyor...")
+            # Method 1: Try direct download from gyan.dev (most reliable)
+            try:
+                if hasattr(self, 'log_text'):
+                    self.log_message("🔍 FFmpeg indiriliyor (Kaynak 1)...")
+                ffmpeg_url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+                self.download_ffmpeg_from_url_simple(ffmpeg_url, ffmpeg_dir)
+                ffmpeg_downloaded = True
+                if hasattr(self, 'log_text'):
+                    self.log_message("✅ FFmpeg başarıyla indirildi!")
+            except Exception as e:
+                if hasattr(self, 'log_text'):
+                    self.log_message(f"⚠️ Kaynak 1 başarısız: {str(e)}")
             
-            # Download FFmpeg with timeout
-            zip_path = os.path.join(ffmpeg_dir, 'ffmpeg.zip')
-            urllib.request.urlretrieve(ffmpeg_url, zip_path)
+            # Method 2: Try GitHub releases if first method failed
+            if not ffmpeg_downloaded:
+                try:
+                    if hasattr(self, 'log_text'):
+                        self.log_message("🔍 FFmpeg indiriliyor (Kaynak 2)...")
+                    # Try to find latest release
+                    import json
+                    github_api_url = "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest"
+                    api_req = urllib.request.Request(github_api_url)
+                    api_req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+                    
+                    with urllib.request.urlopen(api_req, timeout=10) as api_response:
+                        release_data = json.loads(api_response.read().decode())
+                        
+                        # Find win64-gpl.zip asset
+                        for asset in release_data.get('assets', []):
+                            if 'win64-gpl.zip' in asset['name']:
+                                ffmpeg_url = asset['browser_download_url']
+                                self.download_ffmpeg_from_url_simple(ffmpeg_url, ffmpeg_dir)
+                                ffmpeg_downloaded = True
+                                if hasattr(self, 'log_text'):
+                                    self.log_message("✅ FFmpeg başarıyla indirildi!")
+                                break
+                except Exception as e:
+                    if hasattr(self, 'log_text'):
+                        self.log_message(f"⚠️ Kaynak 2 başarısız: {str(e)}")
             
-            if hasattr(self, 'log_text'):
-                self.log_message("📦 FFmpeg çıkarılıyor...")
-            
-            # Extract FFmpeg
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(ffmpeg_dir)
-            
-            # Find ffmpeg.exe in extracted files
-            for root, dirs, files in os.walk(ffmpeg_dir):
-                if 'ffmpeg.exe' in files:
-                    ffmpeg_exe = os.path.join(root, 'ffmpeg.exe')
-                    # Move to ffmpeg directory
-                    shutil.move(ffmpeg_exe, os.path.join(ffmpeg_dir, 'ffmpeg.exe'))
-                    break
-            
-            # Clean up
-            os.remove(zip_path)
-            for root, dirs, files in os.walk(ffmpeg_dir):
-                for dir_name in dirs:
-                    if dir_name != 'ffmpeg':
-                        shutil.rmtree(os.path.join(root, dir_name), ignore_errors=True)
+            if not ffmpeg_downloaded:
+                raise Exception("Tüm FFmpeg indirme kaynakları başarısız oldu. Lütfen internet bağlantınızı kontrol edin.")
             
             self.ffmpeg_path = os.path.join(ffmpeg_dir, 'ffmpeg.exe')
             if hasattr(self, 'log_text'):
-                self.log_message("✅ FFmpeg başarıyla indirildi ve kuruldu!")
+                self.log_message("🎯 Artık maksimum kalitede video indirebilirsiniz!")
             
         except Exception as e:
             if hasattr(self, 'log_text'):
                 self.log_message(f"❌ FFmpeg indirme hatası: {str(e)}")
                 self.log_message("⚠️ FFmpeg olmadan da çalışır, ancak kalite düşük olabilir.")
+    
+    def download_ffmpeg_from_url_simple(self, ffmpeg_url, ffmpeg_dir):
+        """Download FFmpeg from specific URL (simple version)"""
+        if hasattr(self, 'log_text'):
+            self.log_message(f"📥 FFmpeg indiriliyor: {ffmpeg_url}")
+        
+        # Download FFmpeg with timeout
+        zip_path = os.path.join(ffmpeg_dir, 'ffmpeg.zip')
+        urllib.request.urlretrieve(ffmpeg_url, zip_path)
+        
+        if hasattr(self, 'log_text'):
+            self.log_message("📦 FFmpeg çıkarılıyor...")
+        
+        # Extract FFmpeg
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(ffmpeg_dir)
+        
+        # Find ffmpeg.exe in extracted files
+        for root, dirs, files in os.walk(ffmpeg_dir):
+            if 'ffmpeg.exe' in files:
+                ffmpeg_exe = os.path.join(root, 'ffmpeg.exe')
+                # Move to ffmpeg directory
+                shutil.move(ffmpeg_exe, os.path.join(ffmpeg_dir, 'ffmpeg.exe'))
+                break
+        
+        # Clean up
+        os.remove(zip_path)
+        for root, dirs, files in os.walk(ffmpeg_dir):
+            for dir_name in dirs:
+                if dir_name != 'ffmpeg':
+                    shutil.rmtree(os.path.join(root, dir_name), ignore_errors=True)
     
     def show_ffmpeg_progress(self):
         """Show FFmpeg download progress bar"""
